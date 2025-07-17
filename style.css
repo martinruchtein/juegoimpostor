@@ -1,27 +1,12 @@
-/* style.css */
 body {
   font-family: Arial, sans-serif;
-  margin: 20px;
-}
-
-#lobby, #game {
-  margin-top: 20px;
+  padding: 20px;
 }
 
 button {
-  padding: 10px 15px;
+  padding: 10px;
   margin: 5px;
   cursor: pointer;
-}
-
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-#restartBtn {
-  background-color: red;
-  color: white;
 }
 
 

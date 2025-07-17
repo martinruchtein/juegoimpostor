@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -11,20 +10,20 @@
 </head>
 <body>
   <div id="login">
-    <input id="playerName" type="text" placeholder="Ingresá tu nombre" />
+    <input id="playerName" type="text" placeholder="Tu nombre" />
     <button id="joinBtn">Unirse</button>
   </div>
 
   <div id="lobby" style="display:none;">
-    <h3>Jugadores en sala:</h3>
+    <h2>Jugadores:</h2>
     <ul id="playersList"></ul>
-    <button id="startBtn" disabled>Iniciar Ronda</button>
-    <button id="restartBtn" style="background-color: red; color: white;" disabled>Terminar Juego / Reiniciar</button>
+    <button id="startBtn" disabled>Iniciar ronda</button>
+    <button id="restartBtn" style="background:red;color:white;" disabled>Reiniciar juego</button>
     <p id="gameStatus"></p>
   </div>
 
   <div id="game" style="display:none;">
-    <h2>Juego en progreso</h2>
+    <h2>Juego en curso</h2>
     <p id="roleDisplay">Esperando rol...</p>
   </div>
 
@@ -32,6 +31,7 @@
   <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
