@@ -26,8 +26,10 @@ const playersList = document.getElementById("playersList");
 const startBtn = document.getElementById("startBtn");
 const gameDiv = document.getElementById("game");
 const gameStatus = document.getElementById("gameStatus");
+const finishRoundBtn = document.getElementById("finishRoundBtn");
+const scoreBoard = document.getElementById("scoreBoard");
+const joinDiv = document.getElementById("joinDiv");
 
-// Lista con 100 jugadores top (ejemplo simplificado)
 const topPlayers = [
   "Lionel Messi", "Cristiano Ronaldo", "Neymar Jr", "Kylian Mbappé", "Kevin De Bruyne",
   "Robert Lewandowski", "Virgil van Dijk", "Mohamed Salah", "Sadio Mané", "Luka Modrić",
@@ -63,41 +65,53 @@ joinBtn.onclick = () => {
   playersRef.child(playerId).set({
     name: playerName,
     joinedAt: firebase.database.ServerValue.TIMESTAMP,
-  });
+    score: 0
+  }).then(() => {
+    playerNameInput.disabled = true;
+    joinBtn.disabled = true;
+    joinDiv.style.display = "none";
+    lobby.style.display = "block";
 
-  playerNameInput.disabled = true;
-  joinBtn.disabled = true;
-  lobby.style.display = "block";
-
-  playersRef.once("value").then(snapshot => {
-    if (!snapshot.exists() || Object.keys(snapshot.val()).length === 1) {
-      isLeader = true;
-      startBtn.disabled = false;
-    }
+    playersRef.once("value").then(snapshot => {
+      if (!snapshot.exists() || Object.keys(snapshot.val()).length === 1) {
+        isLeader = true;
+        startBtn.disabled = false;
+      }
+    });
   });
 
   playersRef.on("value", snapshot => {
     const players = snapshot.val() || {};
     playersList.innerHTML = "";
-    const ids = Object.keys(players).slice(0, 100); // Limitar a 100 jugadores
+    const ids = Object.keys(players).slice(0, 100);
 
     ids.forEach(id => {
       const li = document.createElement("li");
-      li.textContent = players[id].name;
+      li.textContent = players[id].name + (players[id].score ? ` (Puntos: ${players[id].score})` : "");
       if (id === playerId) li.classList.add("self");
       if (id === ids[0]) li.classList.add("leader");
       playersList.appendChild(li);
     });
   });
 
-  const gameRef = db.ref("game/started");
+  const gameRef = db.ref("game");
   gameRef.on("value", snapshot => {
-    gameStarted = snapshot.val();
+    const gameData = snapshot.val() || {};
+    gameStarted = gameData.started || false;
+
     if (gameStarted) {
       lobby.style.display = "none";
       gameDiv.style.display = "block";
-      gameStatus.textContent = "El juego ha comenzado";
+
+      if (playerId === gameData.impostorId) {
+        gameStatus.textContent = "Eres el IMPOSTOR. No sabes la palabra.";
+      } else {
+        gameStatus.textContent = `La palabra es: ${gameData.word}`;
+      }
       startBtn.disabled = true;
+      finishRoundBtn.style.display = "inline-block";
+
+      updateScoreBoard(gameData.scores || {});
     } else {
       gameDiv.style.display = "none";
       if (isLeader) startBtn.disabled = false;
@@ -107,13 +121,62 @@ joinBtn.onclick = () => {
 
 startBtn.onclick = () => {
   if (isLeader && !gameStarted) {
-    db.ref("game").update({ started: true });
+    const playersRef = db.ref("game/players");
+    playersRef.once("value").then(snapshot => {
+      const players = snapshot.val();
+      const ids = Object.keys(players);
+      if (ids.length < 4) {
+        alert("Se necesitan al menos 4 jugadores para empezar.");
+        return;
+      }
+      const impostorIndex = Math.floor(Math.random() * ids.length);
+      const word = topPlayers[Math.floor(Math.random() * topPlayers.length)];
+
+      const scores = {};
+      ids.forEach(id => {
+        scores[id] = players[id].score || 0;
+      });
+
+      db.ref("game").set({
+        started: true,
+        impostorId: ids[impostorIndex],
+        word: word,
+        scores: scores
+      });
+    });
   }
 };
 
+finishRoundBtn.onclick = () => {
+  // Aquí la lógica para actualizar puntajes (ejemplo: impostor gana o pierden los jugadores)
+  // Por simplicidad, aumentaremos 1 punto al impostor en cada ronda terminada
+
+  const gameRef = db.ref("game");
+  gameRef.once("value").then(snapshot => {
+    const gameData = snapshot.val() || {};
+    const scores = gameData.scores || {};
+    if (!gameData.impostorId) return;
+
+    scores[gameData.impostorId] = (scores[gameData.impostorId] || 0) + 1;
+
+    db.ref("game").update({ scores });
+
+    // Reiniciar juego para siguiente ronda
+    db.ref("game").update({ started: false, impostorId: null, word: null });
+  });
+};
+
+function updateScoreBoard(scores) {
+  let html = "<strong>Puntajes:</strong><br/>";
+  for (const [id, score] of Object.entries(scores)) {
+    html += `<div>${id === playerId ? "(Tú) " : ""}Puntos: ${score}</div>`;
+  }
+  scoreBoard.innerHTML = html;
+}
+
+// Limpiar jugador al cerrar pestaña o recargar página
 window.addEventListener("beforeunload", () => {
   if (playerId) {
     db.ref("game/players/" + playerId).remove();
   }
 });
-
