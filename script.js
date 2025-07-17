@@ -12,18 +12,19 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let playerName = "";
 let playerId = "";
-let isLeader = false;
+let playerName = "";
+let gameStarted = false;
 
 const playerNameInput = document.getElementById("playerName");
 const joinBtn = document.getElementById("joinBtn");
-const lobby = document.getElementById("lobby");
 const playersList = document.getElementById("playersList");
-const startRoundBtn = document.getElementById("startRoundBtn");
-const gameDiv = document.getElementById("game");
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
 const roleDisplay = document.getElementById("roleDisplay");
-const endRoundBtn = document.getElementById("endRoundBtn");
+const lobby = document.getElementById("lobby");
+const gameDiv = document.getElementById("game");
+const gameStatus = document.getElementById("gameStatus");
 
 joinBtn.onclick = () => {
   playerName = playerNameInput.value.trim();
@@ -31,95 +32,95 @@ joinBtn.onclick = () => {
     alert("Ingresá un nombre válido");
     return;
   }
+
   playerId = Date.now().toString();
 
-  const playersRef = db.ref("game/players");
-  playersRef.child(playerId).set({
+  db.ref("game/players/" + playerId).set({
     name: playerName,
-    joinedAt: firebase.database.ServerValue.TIMESTAMP,
+    joinedAt: firebase.database.ServerValue.TIMESTAMP
   });
 
   playerNameInput.disabled = true;
   joinBtn.disabled = true;
+
   lobby.style.display = "block";
 
-  playersRef.once("value").then(snapshot => {
-    if (!snapshot.exists() || Object.keys(snapshot.val()).length === 1) {
-      isLeader = true;
-      startRoundBtn.disabled = false;
-    }
-  });
+  updatePlayersList();
 
-  playersRef.on("value", snapshot => {
-    const players = snapshot.val() || {};
-    playersList.innerHTML = "";
-    const ids = Object.keys(players);
-
-    ids.forEach(id => {
-      const li = document.createElement("li");
-      li.textContent = players[id].name;
-      if (id === playerId) li.classList.add("self");
-      playersList.appendChild(li);
-    });
-
-    if (isLeader) {
-      startRoundBtn.disabled = ids.length < 2; // mínimo 2 jugadores para iniciar
-    }
-  });
-
-  // Escuchar rol asignado
-  const rolesRef = db.ref("game/roles/" + playerId);
-  rolesRef.on("value", snapshot => {
-    const role = snapshot.val();
-    if (role) {
+  db.ref("game/started").on("value", snapshot => {
+    gameStarted = snapshot.val();
+    if (gameStarted) {
       lobby.style.display = "none";
       gameDiv.style.display = "block";
-      roleDisplay.textContent = role === "impostor" ? "Eres el IMPOSTOR" : "Eres un JUGADOR";
-      startRoundBtn.disabled = true;
+      gameStatus.textContent = "El juego ha comenzado";
+      startBtn.disabled = true;
+      listenRoles();
     } else {
-      gameDiv.style.display = "none";
       lobby.style.display = "block";
+      gameDiv.style.display = "none";
       roleDisplay.textContent = "";
-      if (isLeader) startRoundBtn.disabled = false;
+      startBtn.disabled = false;
     }
   });
 };
 
-startRoundBtn.onclick = () => {
-  if (!isLeader) return;
-
-  const playersRef = db.ref("game/players");
-  playersRef.once("value").then(snapshot => {
-    const players = snapshot.val() || {};
-    const ids = Object.keys(players);
-    if (ids.length < 2) {
-      alert("Se necesitan al menos 2 jugadores para iniciar la ronda.");
+startBtn.onclick = () => {
+  db.ref("game/players").once("value").then(snapshot => {
+    const playersObj = snapshot.val() || {};
+    const players = Object.keys(playersObj);
+    if (players.length < 4) {
+      alert("Se necesitan al menos 4 jugadores para iniciar.");
       return;
     }
-
-    // Elegir impostor aleatorio
-    const impostorId = ids[Math.floor(Math.random() * ids.length)];
-
-    // Asignar roles en Firebase
-    const roles = {};
-    ids.forEach(id => {
-      roles[id] = id === impostorId ? "impostor" : "player";
-    });
+    const roles = assignRoles(players); // Función de jugadores.js
+    // Guardar roles en Firebase
     db.ref("game/roles").set(roles);
+    db.ref("game/started").set(true);
   });
 };
 
-endRoundBtn.onclick = () => {
-  if (!isLeader) return;
-
-  // Limpiar roles y mostrar lobby
-  db.ref("game/roles").remove();
+restartBtn.onclick = () => {
+  db.ref("game").set({
+    players: {},
+    started: false,
+    roles: {}
+  });
+  playerNameInput.disabled = false;
+  joinBtn.disabled = false;
+  playerNameInput.value = "";
+  roleDisplay.textContent = "";
+  lobby.style.display = "none";
+  gameDiv.style.display = "none";
+  startBtn.disabled = true;
+  gameStatus.textContent = "";
 };
-  
+
+function updatePlayersList() {
+  db.ref("game/players").on("value", snapshot => {
+    const players = snapshot.val() || {};
+    playersList.innerHTML = "";
+    Object.values(players).forEach(player => {
+      const li = document.createElement("li");
+      li.textContent = player.name;
+      playersList.appendChild(li);
+    });
+  });
+}
+
+function listenRoles() {
+  db.ref("game/roles/" + playerId).on("value", snapshot => {
+    const role = snapshot.val();
+    roleDisplay.textContent = role ? `La palabra es: ${role}` : "Esperando rol...";
+  });
+}
+
+// Limpiar jugador al salir
 window.addEventListener("beforeunload", () => {
   if (playerId) {
     db.ref("game/players/" + playerId).remove();
-    db.ref("game/roles/" + playerId).remove();
   }
 });
+
+
+
 
