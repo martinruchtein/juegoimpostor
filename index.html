@@ -1,0 +1,87 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Impostor Game - Firebase</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 480px;
+    margin: 30px auto;
+    padding: 10px;
+    background: #f9f9f9;
+    color: #222;
+  }
+  h1, h2 {
+    text-align: center;
+  }
+  #playersList {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    background: #fff;
+    margin-bottom: 10px;
+  }
+  #playersList li {
+    padding: 6px 10px;
+    border-bottom: 1px solid #eee;
+  }
+  #playersList li.leader {
+    font-weight: bold;
+    color: #2a7ae2;
+  }
+  #playersList li.self {
+    background: #d1e7dd;
+  }
+  button {
+    cursor: pointer;
+    padding: 10px 20px;
+    font-size: 1rem;
+    background: #2a7ae2;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+  }
+  button:disabled {
+    background: #a1b6db;
+    cursor: default;
+  }
+  input {
+    padding: 8px;
+    font-size: 1rem;
+    width: calc(100% - 20px);
+    margin-bottom: 15px;
+  }
+</style>
+</head>
+<body>
+  <h1>Impostor Game</h1>
+  <div>
+    <label>Tu nombre:</label><br />
+    <input id="playerName" placeholder="Escribí tu nombre" autocomplete="off" />
+    <button id="joinBtn">Unirse a la partida</button>
+  </div>
+
+  <div id="lobby" style="display:none;">
+    <h2>Jugadores en la sala (máx 100):</h2>
+    <ul id="playersList"></ul>
+    <button id="startBtn" disabled>Iniciar juego (Solo líder)</button>
+  </div>
+
+  <div id="game" style="display:none;">
+    <h2>Juego iniciado</h2>
+    <p id="gameStatus"></p>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
+
+
