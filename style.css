@@ -1,43 +1,30 @@
+/* style.css */
 body {
   font-family: Arial, sans-serif;
-  max-width: 600px;
-  margin: 40px auto;
-  padding: 0 20px;
+  margin: 20px;
 }
 
-#playersList {
-  list-style: none;
-  padding-left: 0;
-  margin-bottom: 20px;
-}
-
-#playersList li {
-  padding: 5px;
-  border-bottom: 1px solid #ddd;
-}
-
-.red {
-  background-color: #d9534f;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  cursor: pointer;
-}
-
-.red:hover {
-  background-color: #c9302c;
+#lobby, #game {
+  margin-top: 20px;
 }
 
 button {
   padding: 10px 15px;
-  margin-right: 10px;
+  margin: 5px;
   cursor: pointer;
 }
 
 button:disabled {
-  background-color: #ddd;
+  background-color: #ccc;
   cursor: not-allowed;
 }
+
+#restartBtn {
+  background-color: red;
+  color: white;
+}
+
+
 
 
 

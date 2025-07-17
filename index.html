@@ -1,36 +1,39 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Juego Impostor</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
-
   <div id="login">
-    <input type="text" id="playerName" placeholder="Ingrese su nombre" />
+    <input id="playerName" type="text" placeholder="Ingresá tu nombre" />
     <button id="joinBtn">Unirse</button>
   </div>
 
-  <div id="lobby" style="display:none">
-    <h2>Jugadores conectados:</h2>
+  <div id="lobby" style="display:none;">
+    <h3>Jugadores en sala:</h3>
     <ul id="playersList"></ul>
-    <button id="startBtn" disabled>Iniciar ronda</button>
-    <button id="restartBtn" class="red">Terminar juego y reiniciar</button>
+    <button id="startBtn" disabled>Iniciar Ronda</button>
+    <button id="restartBtn" style="background-color: red; color: white;" disabled>Terminar Juego / Reiniciar</button>
+    <p id="gameStatus"></p>
   </div>
 
-  <div id="game" style="display:none">
-    <h2 id="gameStatus"></h2>
-    <p id="roleDisplay"></p>
+  <div id="game" style="display:none;">
+    <h2>Juego en progreso</h2>
+    <p id="roleDisplay">Esperando rol...</p>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <script src="jugadores.js"></script>
   <script src="script.js"></script>
-  
 </body>
 </html>
+
+
 
 
 

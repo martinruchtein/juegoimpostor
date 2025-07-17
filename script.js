@@ -1,3 +1,4 @@
+// script.js
 const firebaseConfig = {
   apiKey: "AIzaSyCG5GrA3XwItRzc2z3DPWRYvoSy8S04-xk",
   authDomain: "juego-impostor.firebaseapp.com",
@@ -15,6 +16,7 @@ const db = firebase.database();
 let playerId = "";
 let playerName = "";
 let gameStarted = false;
+let isLeader = false;
 
 const playerNameInput = document.getElementById("playerName");
 const joinBtn = document.getElementById("joinBtn");
@@ -25,6 +27,11 @@ const roleDisplay = document.getElementById("roleDisplay");
 const lobby = document.getElementById("lobby");
 const gameDiv = document.getElementById("game");
 const gameStatus = document.getElementById("gameStatus");
+
+function updateControls() {
+  startBtn.disabled = !isLeader || gameStarted;
+  restartBtn.disabled = !isLeader;
+}
 
 joinBtn.onclick = () => {
   playerName = playerNameInput.value.trim();
@@ -38,29 +45,32 @@ joinBtn.onclick = () => {
   db.ref("game/players/" + playerId).set({
     name: playerName,
     joinedAt: firebase.database.ServerValue.TIMESTAMP
-  });
+  }).then(() => {
+    checkEmptyLobby();
 
-  playerNameInput.disabled = true;
-  joinBtn.disabled = true;
+    playerNameInput.disabled = true;
+    joinBtn.disabled = true;
 
-  lobby.style.display = "block";
+    lobby.style.display = "block";
 
-  updatePlayersList();
+    updatePlayersList();
 
-  db.ref("game/started").on("value", snapshot => {
-    gameStarted = snapshot.val();
-    if (gameStarted) {
-      lobby.style.display = "none";
-      gameDiv.style.display = "block";
-      gameStatus.textContent = "El juego ha comenzado";
-      startBtn.disabled = true;
-      listenRoles();
-    } else {
-      lobby.style.display = "block";
-      gameDiv.style.display = "none";
-      roleDisplay.textContent = "";
-      startBtn.disabled = false;
-    }
+    db.ref("game/started").on("value", snapshot => {
+      gameStarted = snapshot.val();
+      if (gameStarted) {
+        lobby.style.display = "none";
+        gameDiv.style.display = "block";
+        gameStatus.textContent = "El juego ha comenzado";
+        startBtn.disabled = true;
+        listenRoles();
+      } else {
+        lobby.style.display = "block";
+        gameDiv.style.display = "none";
+        roleDisplay.textContent = "";
+        updateControls();
+        gameStatus.textContent = "";
+      }
+    });
   });
 };
 
@@ -68,30 +78,32 @@ startBtn.onclick = () => {
   db.ref("game/players").once("value").then(snapshot => {
     const playersObj = snapshot.val() || {};
     const players = Object.keys(playersObj);
-    if (players.length < 4) {
-      alert("Se necesitan al menos 4 jugadores para iniciar.");
+    if (players.length < 2) {
+      alert("Se necesitan al menos 2 jugadores para iniciar.");
       return;
     }
-    const roles = assignRoles(players); // Función de jugadores.js
-    // Guardar roles en Firebase
+    const roles = assignRoles(players);
     db.ref("game/roles").set(roles);
     db.ref("game/started").set(true);
   });
 };
 
 restartBtn.onclick = () => {
-  db.ref("game/players").remove();
-  db.ref("game/roles").remove();
-  db.ref("game/started").set(false);
-
+  if (!isLeader) return;
+  db.ref("game").set({
+    players: {},
+    started: false,
+    roles: {}
+  });
   playerNameInput.disabled = false;
   joinBtn.disabled = false;
   playerNameInput.value = "";
   roleDisplay.textContent = "";
   lobby.style.display = "none";
   gameDiv.style.display = "none";
-  startBtn.disabled = true;
   gameStatus.textContent = "";
+  isLeader = false;
+  updateControls();
 };
 
 function updatePlayersList() {
@@ -113,12 +125,47 @@ function listenRoles() {
   });
 }
 
-// Limpiar jugador al salir
+function checkEmptyLobby() {
+  db.ref("game/players").once("value").then(snapshot => {
+    const players = snapshot.val() || {};
+    if (Object.keys(players).length === 0) {
+      db.ref("game").set({
+        players: {},
+        started: false,
+        roles: {}
+      });
+      isLeader = false;
+      updateControls();
+    } else {
+      const firstPlayerId = Object.keys(players).sort((a,b) => players[a].joinedAt - players[b].joinedAt)[0];
+      isLeader = (firstPlayerId === playerId);
+      updateControls();
+    }
+  });
+}
+
+db.ref("game/players").on("value", () => {
+  checkEmptyLobby();
+});
+
 window.addEventListener("beforeunload", () => {
   if (playerId) {
     db.ref("game/players/" + playerId).remove();
   }
 });
+
+// assignRoles imported from jugadores.js
+function assignRoles(players) {
+  const roles = {};
+  const impostorIndex = Math.floor(Math.random() * players.length);
+  const impostor = jugadoresFutbol[Math.floor(Math.random() * jugadoresFutbol.length)];
+  players.forEach((id, i) => {
+    roles[id] = i === impostorIndex ? impostor : "Jugador";
+  });
+  return roles;
+}
+
+
 
 
 
