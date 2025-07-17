@@ -26,10 +26,8 @@ const playersList = document.getElementById("playersList");
 const startBtn = document.getElementById("startBtn");
 const gameDiv = document.getElementById("game");
 const gameStatus = document.getElementById("gameStatus");
-const finishRoundBtn = document.getElementById("finishRoundBtn");
-const scoreBoard = document.getElementById("scoreBoard");
-const joinDiv = document.getElementById("joinDiv");
 
+// Lista de 100 jugadores top
 const topPlayers = [
   "Lionel Messi", "Cristiano Ronaldo", "Neymar Jr", "Kylian Mbappé", "Kevin De Bruyne",
   "Robert Lewandowski", "Virgil van Dijk", "Mohamed Salah", "Sadio Mané", "Luka Modrić",
@@ -65,118 +63,95 @@ joinBtn.onclick = () => {
   playersRef.child(playerId).set({
     name: playerName,
     joinedAt: firebase.database.ServerValue.TIMESTAMP,
-    score: 0
-  }).then(() => {
-    playerNameInput.disabled = true;
-    joinBtn.disabled = true;
-    joinDiv.style.display = "none";
-    lobby.style.display = "block";
+  });
 
-    playersRef.once("value").then(snapshot => {
-      if (!snapshot.exists() || Object.keys(snapshot.val()).length === 1) {
-        isLeader = true;
-        startBtn.disabled = false;
-      }
-    });
+  playerNameInput.disabled = true;
+  joinBtn.disabled = true;
+  lobby.style.display = "block";
+
+  playersRef.once("value").then(snapshot => {
+    if (!snapshot.exists() || Object.keys(snapshot.val()).length === 1) {
+      isLeader = true;
+      startBtn.disabled = false;
+    }
   });
 
   playersRef.on("value", snapshot => {
     const players = snapshot.val() || {};
     playersList.innerHTML = "";
-    const ids = Object.keys(players).slice(0, 100);
+    const ids = Object.keys(players).slice(0, 100); // Limitar a 100 jugadores
 
     ids.forEach(id => {
       const li = document.createElement("li");
-      li.textContent = players[id].name + (players[id].score ? ` (Puntos: ${players[id].score})` : "");
+      li.textContent = players[id].name;
       if (id === playerId) li.classList.add("self");
       if (id === ids[0]) li.classList.add("leader");
       playersList.appendChild(li);
     });
   });
 
-  const gameRef = db.ref("game");
-  gameRef.on("value", snapshot => {
-    const gameData = snapshot.val() || {};
-    gameStarted = gameData.started || false;
+  // Escuchar el estado del juego completo para palabra e impostor
+  db.ref("game").on("value", (snapshot) => {
+    const game = snapshot.val() || {};
+    gameStarted = game.started;
 
     if (gameStarted) {
       lobby.style.display = "none";
       gameDiv.style.display = "block";
-
-      if (playerId === gameData.impostorId) {
-        gameStatus.textContent = "Eres el IMPOSTOR. No sabes la palabra.";
+      if (playerId === game.impostorId) {
+        gameStatus.textContent = "Eres el IMPOSTOR";
       } else {
-        gameStatus.textContent = `La palabra es: ${gameData.word}`;
+        gameStatus.textContent = "La palabra es: " + game.word;
       }
       startBtn.disabled = true;
-      finishRoundBtn.style.display = "inline-block";
-
-      updateScoreBoard(gameData.scores || {});
+      if (!document.getElementById("endRoundBtn")) {
+        const endRoundBtn = document.createElement("button");
+        endRoundBtn.id = "endRoundBtn";
+        endRoundBtn.textContent = "Terminar ronda";
+        endRoundBtn.onclick = async () => {
+          await db.ref("game").update({ started: false, word: null, impostorId: null });
+          lobby.style.display = "block";
+          gameDiv.style.display = "none";
+          if (isLeader) startBtn.disabled = false;
+        };
+        gameDiv.appendChild(endRoundBtn);
+      }
     } else {
       gameDiv.style.display = "none";
       if (isLeader) startBtn.disabled = false;
+      const endBtn = document.getElementById("endRoundBtn");
+      if (endBtn) endBtn.remove();
     }
   });
 };
 
-startBtn.onclick = () => {
+startBtn.onclick = async () => {
   if (isLeader && !gameStarted) {
-    const playersRef = db.ref("game/players");
-    playersRef.once("value").then(snapshot => {
-      const players = snapshot.val();
-      const ids = Object.keys(players);
-      if (ids.length < 4) {
-        alert("Se necesitan al menos 4 jugadores para empezar.");
-        return;
-      }
-      const impostorIndex = Math.floor(Math.random() * ids.length);
-      const word = topPlayers[Math.floor(Math.random() * topPlayers.length)];
+    // Elegir palabra al azar
+    const word = topPlayers[Math.floor(Math.random() * topPlayers.length)];
 
-      const scores = {};
-      ids.forEach(id => {
-        scores[id] = players[id].score || 0;
-      });
+    // Obtener jugadores actuales
+    const playersSnap = await db.ref("game/players").once("value");
+    const players = playersSnap.val();
+    if (!players) return alert("No hay jugadores para iniciar.");
 
-      db.ref("game").set({
-        started: true,
-        impostorId: ids[impostorIndex],
-        word: word,
-        scores: scores
-      });
+    const playerIds = Object.keys(players);
+    // Elegir impostor al azar
+    const impostorId = playerIds[Math.floor(Math.random() * playerIds.length)];
+
+    // Guardar palabra e impostor en Firebase
+    await db.ref("game").update({
+      started: true,
+      word: word,
+      impostorId: impostorId
     });
   }
 };
 
-finishRoundBtn.onclick = () => {
-  // Aquí la lógica para actualizar puntajes (ejemplo: impostor gana o pierden los jugadores)
-  // Por simplicidad, aumentaremos 1 punto al impostor en cada ronda terminada
-
-  const gameRef = db.ref("game");
-  gameRef.once("value").then(snapshot => {
-    const gameData = snapshot.val() || {};
-    const scores = gameData.scores || {};
-    if (!gameData.impostorId) return;
-
-    scores[gameData.impostorId] = (scores[gameData.impostorId] || 0) + 1;
-
-    db.ref("game").update({ scores });
-
-    // Reiniciar juego para siguiente ronda
-    db.ref("game").update({ started: false, impostorId: null, word: null });
-  });
-};
-
-function updateScoreBoard(scores) {
-  let html = "<strong>Puntajes:</strong><br/>";
-  for (const [id, score] of Object.entries(scores)) {
-    html += `<div>${id === playerId ? "(Tú) " : ""}Puntos: ${score}</div>`;
-  }
-  scoreBoard.innerHTML = html;
-}
-
-// Limpiar jugador al cerrar pestaña o recargar página
+// Limpieza en caso de cerrar ventana o salir
 window.addEventListener("beforeunload", () => {
   if (playerId) {
-    db.ref("game/players/" + playerId).remove();
+    db.ref("game/players").child(playerId).remove();
   }
 });
+
