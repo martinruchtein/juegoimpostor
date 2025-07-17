@@ -80,11 +80,10 @@ startBtn.onclick = () => {
 };
 
 restartBtn.onclick = () => {
-  db.ref("game").set({
-    players: {},
-    started: false,
-    roles: {}
-  });
+  db.ref("game/players").remove();
+  db.ref("game/roles").remove();
+  db.ref("game/started").set(false);
+
   playerNameInput.disabled = false;
   joinBtn.disabled = false;
   playerNameInput.value = "";
