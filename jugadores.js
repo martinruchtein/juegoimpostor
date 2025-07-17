@@ -1,42 +1,102 @@
-// Lista de 75 jugadores de fútbol
-const futbolPlayers = [
-  "Lionel Messi", "Cristiano Ronaldo", "Neymar Jr", "Kylian Mbappé", "Kevin De Bruyne",
-  "Robert Lewandowski", "Virgil van Dijk", "Mohamed Salah", "Sadio Mané", "Luka Modrić",
-  "Harry Kane", "Erling Haaland", "Sergio Ramos", "Paulo Dybala", "Karim Benzema",
-  "Jan Oblak", "Alisson Becker", "Joshua Kimmich", "Son Heung-min", "Trent Alexander-Arnold",
-  "Raheem Sterling", "Jadon Sancho", "Bruno Fernandes", "Toni Kroos", "Marc-André ter Stegen",
-  "Pierre-Emerick Aubameyang", "Ederson", "Casemiro", "Marco Reus", "Riyad Mahrez",
-  "Mason Mount", "Gerard Piqué", "Angel Di María", "Frenkie de Jong", "Thomas Müller",
-  "Luis Suárez", "Hakim Ziyech", "Achraf Hakimi", "Phil Foden", "Antoine Griezmann",
-  "Ciro Immobile", "David de Gea", "James Rodríguez", "Kalidou Koulibaly", "Leonardo Bonucci",
-  "Ángel Correa", "Dusan Vlahović", "Rodri", "Marquinhos", "Gianluigi Donnarumma",
-  "Jordi Alba", "Alexis Sánchez", "Zlatan Ibrahimović", "Christian Pulisic", "Thomas Partey",
-  "N’Golo Kanté", "Yaya Touré", "Andrea Pirlo", "Xavi Hernández", "Iker Casillas",
-  "David Silva", "Sergio Agüero", "Luis Figo", "Frank Lampard", "Ryan Giggs",
-  "Paul Pogba", "Didier Drogba", "Thiago Silva", "John Terry", "Carles Puyol",
-  "Kaka", "Bastian Schweinsteiger", "Eden Hazard", "Mesut Özil", "Wayne Rooney",
-  "Mario Götze", "Gareth Bale", "Marcelo", "Sergio Busquets", "Javi Martínez"
+// players.js
+
+const players = [
+  "Pelé",
+  "Diego Maradona",
+  "Johan Cruyff",
+  "Franz Beckenbauer",
+  "Alfredo Di Stéfano",
+  "Ferenc Puskás",
+  "Lev Yashin",
+  "George Best",
+  "Bobby Charlton",
+  "Eusébio",
+  "Michel Platini",
+  "Gerd Müller",
+  "Paolo Maldini",
+  "Roberto Baggio",
+  "Ronaldinho",
+  "Lionel Messi",
+  "Cristiano Ronaldo",
+  "Neymar Jr.",
+  "Kylian Mbappé",
+  "Vinícius Jr.",
+  "Phil Foden",
+  "Pedri",
+  "Jude Bellingham",
+  "Erling Haaland",
+  "Raphinha",
+  "Lamine Yamal",
+  "Rodrygo",
+  "Karim Benzema",
+  "Kevin De Bruyne",
+  "Luka Modrić",
+  "Mohamed Salah",
+  "Harry Kane",
+  "Robert Lewandowski",
+  "Sadio Mané",
+  "Jadon Sancho",
+  "Frenkie de Jong",
+  "Bruno Fernandes",
+  "Mason Mount",
+  "Kai Havertz",
+  "Gabriel Jesus",
+  "Alexis Mac Allister",
+  "Richarlison",
+  "Philippe Coutinho",
+  "Casemiro",
+  "Riyad Mahrez",
+  "Andrés Iniesta",
+  "Xavi Hernández",
+  "Sergio Ramos",
+  "Eden Hazard",
+  "Thierry Henry",
+  "Didier Drogba",
+  "David Beckham",
+  "Wayne Rooney",
+  "Manuel Neuer",
+  "Gianluigi Buffon",
+  "Paulo Dybala",
+  "Ángel Di María",
+  "Raúl González",
+  "Zlatan Ibrahimović",
+  "James Rodríguez",
+  "Carlos Tevez",
+  "Javier Zanetti",
+  "Frank Lampard",
+  "Steven Gerrard",
+  "Clarence Seedorf",
+  "Juan Román Riquelme",
+  "Fernando Hierro",
+  "Michael Laudrup",
+  "Peter Schmeichel",
+  "Toni Kroos",
+  "Paul Pogba",
+  "Mats Hummels",
+  "Lucas Hernández",
+  "David Silva",
+  "Thiago Alcántara"
 ];
 
-// Función para asignar roles: 1 impostor, resto jugadores con mismo nombre de futbolista
-function assignRoles(players) {
-  if (players.length < 4) {
-    throw new Error("Se necesitan al menos 4 jugadores para jugar");
-  }
+function assignRoles(playerIds) {
   const roles = {};
-  // Elegir impostor aleatorio
-  const impostorIndex = Math.floor(Math.random() * players.length);
+  // shuffle players array to assign footballer names randomly
+  const shuffledPlayers = players.sort(() => 0.5 - Math.random());
 
-  // Elegir nombre futbolístico para los demás
-  const futbolName = futbolPlayers[Math.floor(Math.random() * futbolPlayers.length)];
+  // choose random impostor among players
+  const impostorIndex = Math.floor(Math.random() * playerIds.length);
 
-  players.forEach((playerId, index) => {
-    if (index === impostorIndex) {
-      roles[playerId] = "Impostor";
+  playerIds.forEach((id, i) => {
+    if (i === impostorIndex) {
+      roles[id] = "Impostor";
     } else {
-      roles[playerId] = futbolName;
+      // assign football player name cycling through shuffledPlayers
+      roles[id] = shuffledPlayers[i % shuffledPlayers.length];
     }
   });
+
   return roles;
 }
+
+
 
